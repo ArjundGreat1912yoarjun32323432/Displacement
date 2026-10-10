@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DISPLACEMENT — Execution Command Center V1.0</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        :root {
+            --bg-main: #090a0f;
+            --bg-sidebar: #0d0f17;
+            --bg-card: #12151e;
+            --border: #1e2230;
+            --border-hover: #3a4158;
+            --text-main: #f3f4f6;
+            --text-muted: #6b7280;
+            --accent-white: #ffffff;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body { background: var(--bg-main); color: var(--text-main); height: 100vh; overflow: hidden; display: flex; }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: var(--bg-main); }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+        /* SIDEBAR STYLING */
+        aside {
+            width: 240px;
+            background: var(--bg-sidebar);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 24px 16px;
+            user-select: none;
+        }
+
+        .brand-box { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
+        .logo-badge {
+            width: 38px; height: 38px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--accent-white);
+            font-weight: 800;
+            font-size: 16px;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .brand-title { font-size: 14px; font-weight: 800; letter-spacing: 1.5px; color: var(--accent-white); }
+        .brand-sub { font-size: 10px; color: var(--text-muted); font-family: monospace; }
+
+        .nav-list { display: flex; flex-direction: column; gap: 6px; }
+        .nav-item {
+            display: flex; align-items: center; gap: 10px;
+            padding: 12px 14px;
+            border-radius: 8px;
+            font-size: 12px;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .nav-item:hover { background: var(--bg-card); color: var(--text-main); }
+        .nav-item.active { background: var(--bg-card); color: var(--accent-white); font-weight: 600; border-left: 2px solid var(--accent-white); }
+
+        .build-tag {
+            font-size: 10px; color: var(--text-muted); font-family: monospace;
+            background: var(--bg-card); padding: 10px; border-radius: 6px; border: 1px solid var(--border);
+        }
+
+        /* MAIN CONTENT AREA */
+        main { flex: 1; display: flex; flex-direction: column; overflow-y: auto; position: relative; }
+
+        .top-bar {
+            padding: 20px 36px;
+            border-bottom: 1px solid var(--border);
+            display: flex; justify-content: space-between; align-items: center;
+            background: rgba(9, 10, 15, 0.9); backdrop-filter: blur(8px);
+            position: sticky; top: 0; z-index: 10;
+        }
+        .user-welcome { font-size: 20px; font-weight: 800; letter-spacing: 1px; color: var(--accent-white); }
+        .tagline { font-size: 12px; color: var(--text-muted); font-style: italic; margin-top: 4px; }
+
+        .content-body { padding: 36px; max-width: 1100px; margin: 0 auto; width: 100%; display: flex; flex-direction: column; gap: 24px; }
+
+        .tab-content { animation: fadeIn 0.25s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            display: flex; flex-direction: column; gap: 20px;
+        }
+        .card-header {
+            font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 1.2px; color: var(--text-muted);
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 10px;
+        }
+
+        .core-goals-card {
+            border: 1px solid var(--accent-white);
+            background: linear-gradient(135deg, var(--bg-card) 0%, rgba(255,255,255,0.03) 100%);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .core-goal-item {
+            font-size: 16px; font-weight: 800; color: var(--accent-white); letter-spacing: 0.5px;
+            background: var(--bg-main); border: 1px solid var(--border); padding: 16px 20px; border-radius: 8px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+
+        .metrics-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .metric-box { background: var(--bg-main); border: 1px solid var(--border); padding: 20px; border-radius: 10px; text-align: center; }
+        .metric-val { font-size: 36px; font-weight: 800; font-family: monospace; margin-top: 6px; color: var(--accent-white); }
+
+        input, select, textarea {
+            background: var(--bg-main); border: 1px solid var(--border); color: var(--text-main);
+            padding: 12px 16px; border-radius: 8px; font-size: 13px; outline: none; transition: 0.2s;
+        }
+        input:focus, select:focus, textarea:focus { border-color: var(--accent-white); }
+
+        .btn {
+            background: var(--accent-white); color: #000000; border: none; padding: 12px 18px;
+            border-radius: 8px; font-size: 13px; font-weight: 800; cursor: pointer; transition: 0.2s;
+        }
+        .btn:hover { opacity: 0.85; transform: translateY(-1px); }
+        .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-main); }
+        .btn-outline:hover { border-color: var(--text-muted); }
+
+        .list-container { display: flex; flex-direction: column; gap: 10px; }
+        .list-item {
+            background: var(--bg-main); border: 1px solid var(--border); padding: 12px 16px;
+            border-radius: 8px; font-size: 13px; display: flex; justify-content: space-between; align-items: center;
+        }
+        .delete-btn { color: var(--text-muted); cursor: pointer; font-size: 14px; font-weight: 700; }
+        .delete-btn:hover { color: var(--accent-white); }
+        .cat-badge { font-size: 10px; font-family: monospace; padding: 3px 8px; border: 1px solid var(--border); border-radius: 4px; color: var(--text-muted); }
+
+        .pomo-inputs { display: flex; gap: 12px; align-items: center; }
+        .pomo-input-unit { display: flex; flex-direction: column; gap: 4px; }
+        .pomo-input-unit label { font-size: 10px; color: var(--text-muted); }
+        .pomo-input-unit input { width: 90px; text-align: center; }
+
+        .timer-big { font-size: 60px; font-weight: 800; font-family: monospace; text-align: center; margin: 16px 0; color: var(--accent-white); }
+
+        .sound-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .sound-card {
+            background: var(--bg-main); border: 1px solid var(--border); padding: 16px; border-radius: 8px;
+            cursor: pointer; text-align: left; transition: 0.2s;
+        }
+        .sound-card:hover { border-color: var(--border-hover); }
+        .sound-card.active { border-color: var(--accent-white); background: rgba(255,255,255,0.05); }
+        .sound-title { font-size: 13px; font-weight: 800; color: var(--text-main); }
+        .sound-desc { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+
+        /* LANDING VIEW */
+        #landingView {
+            position: fixed; inset: 0; z-index: 100; background: var(--bg-main);
+            display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+            padding: 40px 60px; overflow-y: auto;
+        }
+        .landing-container {
+            max-width: 1100px; width: 100%; display: flex; flex-direction: column; gap: 48px; text-align: center; margin: auto 0;
+        }
+        .landing-nav {
+            display: flex; justify-content: space-between; align-items: center; padding-bottom: 24px; border-bottom: 1px solid var(--border); width: 100%;
+        }
+        .landing-logo { display: flex; align-items: center; gap: 12px; font-weight: 800; letter-spacing: 1.5px; font-size: 15px; color: var(--accent-white); }
+        
+        .hero-headline {
+            font-size: 52px; font-weight: 800; letter-spacing: -1.5px; line-height: 1.1; color: var(--accent-white);
+        }
+        .hero-headline span { color: var(--text-muted); font-weight: 400; display: block; margin-top: 12px; font-size: 36px; }
+
+        .hero-sub {
+            font-size: 16px; color: var(--text-muted); max-width: 700px; margin: 0 auto; line-height: 1.6;
+        }
+
+        .landing-features-grid {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; text-align: left;
+        }
+        .landing-feature-card {
+            background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 24px; display: flex; flex-direction: column; gap: 10px; transition: 0.2s;
+        }
+        .landing-feature-card:hover { border-color: var(--border-hover); transform: translateY(-2px); }
+        .landing-feature-tag { font-size: 10px; font-family: monospace; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1.2px; }
+        .landing-feature-title { font-size: 14px; font-weight: 800; color: var(--accent-white); }
+        .landing-feature-desc { font-size: 12px; color: var(--text-muted); line-height: 1.5; }
+
+        .landing-auth-box {
+            background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 32px; max-width: 520px; margin: 0 auto; width: 100%; display: flex; flex-direction: column; gap: 16px; text-align: left;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.9);
+        }
+
+        .reviews-section {
+            display: flex; flex-direction: column; gap: 16px; text-align: left; border-top: 1px solid var(--border); padding-top: 36px;
+        }
+        .reviews-header { font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; color: var(--accent-white); }
+        .review-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 18px; display: flex; flex-direction: column; gap: 8px; }
+        .review-text { font-size: 12px; color: var(--text-main); font-style: italic; line-height: 1.4; }
+        .review-author { font-size: 11px; font-family: monospace; color: var(--text-muted); }
+
+        .review-form-box {
+            background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 12px; margin-top: 10px;
+        }
+
+        .modal-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(4px);
+            display: flex; align-items: center; justify-content: center; z-index: 100;
+        }
+        .modal-card {
+            background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px;
+            width: 100%; max-width: 440px; padding: 28px; display: flex; flex-direction: column; gap: 20px;
+        }
+
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <!-- LANDING VIEW WITH 7-DAY TRIAL ENFORCEMENT -->
+    <div id="landingView">
+        <div class="landing-container">
+            <div class="landing-nav">
+                <div class="landing-logo">
+                    <div class="logo-badge" style="width: 32px; height: 32px; font-size: 14px;">S</div>
+                    DISPLACEMENT
+                </div>
+                <div style="font-size: 11px; font-family: monospace; color: var(--text-muted); background: var(--bg-card); border: 1px solid var(--border); padding: 6px 14px; border-radius: 20px;">
+                    7-day free trial • Professional Edition
+                </div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 20px;">
+                <h1 class="hero-headline">
+                    The shortest path from Point A to your destination.
+                    <span>Eliminate software bloat. Execute with absolute velocity.</span>
+                </h1>
+                <p class="hero-sub">
+                    Displacement is an obsidian-dark execution command center engineered specifically for high-output working professionals, founders, and creators who ship fast.
+                </p>
+            </div>
+
+            <div class="landing-features-grid">
+                <div class="landing-feature-card">
+                    <span class="landing-feature-tag">[01 / Architecture]</span>
+                    <div class="landing-feature-title">Task & Goal Isolation</div>
+                    <div class="landing-feature-desc">Isolate core objectives and execute sprint targets with zero cognitive friction.</div>
+                </div>
+                <div class="landing-feature-card">
+                    <span class="landing-feature-tag">[02 / Execution]</span>
+                    <div class="landing-feature-title">Pomodoro & Soundscapes</div>
+                    <div class="landing-feature-desc">Precision focus timers backed by 4 synthesized ambient audio generators.</div>
+                </div>
+                <div class="landing-feature-card">
+                    <span class="landing-feature-tag">[03 / Intelligence]</span>
+                    <div class="landing-feature-title">Active Calendar Planner</div>
+                    <div class="landing-feature-desc">Interactive daily planning, special date marking, and historical cross-off tracking.</div>
+                </div>
+            </div>
+
+            <!-- INITIALIZE BOX -->
+            <div class="landing-auth-box">
+                <div style="font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1.2px; color: var(--text-muted);">
+                    Initialize Professional Workspace
+                </div>
+                <input type="text" id="handleInput" placeholder="Enter full name or professional handle..." style="width: 100%;">
+                <input type="email" id="emailInput" placeholder="Enter verified professional email (e.g., name@domain.com)..." style="width: 100%;" onkeydown="if(event.key==='Enter') initializeWorkspace()">
+                <button class="btn" onclick="initializeWorkspace()" style="width: 100%; padding: 14px; font-size: 14px;">Launch Workspace &rarr;</button>
+                <div id="authErrorMsg" style="font-size: 11px; color: #ef4444; font-family: monospace; display: none;"></div>
+            </div>
+
+            <div class="reviews-section">
+                <div class="reviews-header">Verified Creator & Professional Feedback</div>
+                <div class="review-form-box">
+                    <div style="font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted);">Leave a Review / Feature Request</div>
+                    <div style="display: flex; gap: 10px;">
+                        <input type="text" id="reviewAuthorInp" placeholder="Your name & title..." style="width: 240px;">
+                        <input type="text" id="reviewTextInp" placeholder="What do you think about Displacement?" style="flex: 1;" onkeydown="if(event.key==='Enter') submitReview()">
+                        <button class="btn btn-outline" onclick="submitReview()">Submit</button>
+                    </div>
+                    <div id="reviewsList" class="list-container" style="margin-top: 10px;"></div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- TRIAL EXPIRED MODAL OVERLAY -->
+    <div id="expiredModal" class="modal-overlay hidden" style="z-index: 200;">
+        <div class="modal-card" style="text-align: center; gap: 24px; padding: 36px;">
+            <div style="font-size: 20px; font-weight: 800; color: var(--accent-white);">Trial Period Completed</div>
+            <div style="font-size: 13px; color: var(--text-muted); line-height: 1.6;">
+                Your 7-day free trial for Displacement has expired. Please wait for <b>Version 1.5</b> release to unlock extended professional workspace cycles.
+            </div>
+            <div style="font-size: 12px; font-style: italic; color: var(--text-main);">"Excellence is not an act, but a habit of relentless execution."</div>
+            <button class="btn" onclick="location.reload()" style="padding: 12px;">Got it</button>
+        </div>
+    </div>
+
+    <!-- MAIN APP SIDEBAR -->
+    <aside id="appSidebar">
+        <div>
+            <div class="brand-box">
+                <div class="logo-badge">S</div>
+                <div>
+                    <div class="brand-title">DISPLACEMENT</div>
+                    <div class="brand-sub">V1.0 OPEN BETA</div>
+                </div>
+            </div>
+
+            <div class="nav-list">
+                <div class="nav-item active" id="nav-dashboard" onclick="showTab('dashboard')">📊 Dashboard</div>
+                <div class="nav-item" id="nav-calendar" onclick="showTab('calendar')">📅 Calendar Planner</div>
+                <div class="nav-item" id="nav-tasks" onclick="showTab('tasks')">🎯 Task Engine</div>
+                <div class="nav-item" id="nav-focus" onclick="showTab('focus')">⏱️ Focus Suite</div>
+                <div class="nav-item" id="nav-settings" onclick="showTab('settings')">⚙️ Settings</div>
+            </div>
+        </div>
+
+        <div class="build-tag">
+            System State: <span style="color: var(--accent-white);">V1.0 Beta Live</span>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT VIEW -->
+    <main id="appMain">
+        <div class="top-bar">
+            <div style="display: flex; align-items: center; gap: 16px;">
+                <button class="btn btn-outline" onclick="toggleSidebar()" style="padding: 8px 12px; font-family: monospace;" title="Toggle Sidebar (S)">[S]</button>
+                <div>
+                    <div class="user-welcome" id="displayWelcome">WELCOME, USER</div>
+                    <div class="tagline">"The shortest path from Point A to your destination."</div>
+                </div>
+            </div>
+            <button class="btn btn-outline" onclick="completeDay()">✨ Finish Day</button>
+        </div>
+
+        <div class="content-body">
+
+            <!-- TAB 1: DASHBOARD -->
+            <div id="tab-dashboard" class="tab-content">
+                <div class="card core-goals-card">
+                    <div class="card-header" style="color: var(--accent-white);">
+                        <span>⚡ Core Goals (Point B) — Primary Focus</span>
+                        <span style="font-family: monospace; color: var(--accent-white);">PINNED</span>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <input type="text" id="goalInp" placeholder="Enter high-impact objective (Point B)..." style="flex: 1;" onkeydown="if(event.key==='Enter') addCustomGoal()">
+                        <button class="btn" onclick="addCustomGoal()">+ Add Goal</button>
+                    </div>
+                    <div id="goalsList" class="list-container"></div>
+                </div>
+
+                <div class="metrics-grid">
+                    <div class="metric-box">
+                        <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1.2px; font-weight: 700;">Pending Targets</div>
+                        <div class="metric-val" id="pendingNum">0</div>
+                    </div>
+                    <div class="metric-box">
+                        <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1.2px; font-weight: 700;">Completed Targets</div>
+                        <div class="metric-val" id="completedNum">0</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 2: CALENDAR PLANNER -->
+            <div id="tab-calendar" class="tab-content hidden">
+                <div class="card">
+                    <div class="card-header">
+                        <span>Active Calendar & Daily Planner</span>
+                        <div style="display: flex; gap: 14px; align-items: center;">
+                            <button onclick="navCal(-1)" style="background:none; border:none; color:var(--text-main); cursor:pointer; font-size:16px;">&larr;</button>
+                            <span id="calMonthYear" style="font-family: monospace; font-weight: 800;">October 2026</span>
+                            <button onclick="navCal(1)" style="background:none; border:none; color:var(--text-main); cursor:pointer; font-size:16px;">&rarr;</button>
+                        </div>
+                    </div>
+                    <div style="font-size: 11px; color: var(--text-muted);">Click any date to mark events, set plans, or inspect completed execution logs.</div>
+                    <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; text-align: center; font-size: 11px; font-family: monospace; color: var(--text-muted); font-weight: 700;">
+                        <div>SUN</div><div>MON</div><div>TUE</div><div>WED</div><div>THU</div><div>FRI</div><div>SAT</div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px;" id="calDaysGrid"></div>
+                </div>
+            </div>
+
+            <!-- TAB 3: TASK ENGINE -->
+            <div id="tab-tasks" class="tab-content hidden">
+                <div class="card">
+                    <div class="card-header">Add Operational Target</div>
+                    <div style="display: flex; gap: 10px;">
+                        <input type="text" id="targetInp" placeholder="Describe operational task..." style="flex: 1;" onkeydown="if(event.key==='Enter') addOperationalTarget()">
+                        <select id="targetCat">
+                            <option value="Sprint">Sprint</option>
+                            <option value="Urgent">Urgent</option>
+                            <option value="Work">Work</option>
+                        </select>
+                        <button class="btn" onclick="addOperationalTarget()">+ Add Target</button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">All Workspace Targets</div>
+                    <div id="targetListDisplay" class="list-container"></div>
+                </div>
+            </div>
+
+            <!-- TAB 4: FOCUS SUITE -->
+            <div id="tab-focus" class="tab-content hidden">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div class="card">
+                        <div class="card-header">Pomodoro Engine</div>
+                        <div class="pomo-inputs">
+                            <div class="pomo-input-unit">
+                                <label>Work (Min)</label>
+                                <input type="number" id="pomoWorkInp" value="25" onchange="resetPomoTimer()">
+                            </div>
+                            <div class="pomo-input-unit">
+                                <label>Break (Min)</label>
+                                <input type="number" id="pomoBreakInp" value="5">
+                            </div>
+                        </div>
+                        <div class="timer-big" id="pomoClock">25:00</div>
+                        <div style="display: flex; gap: 10px; justify-content: center;">
+                            <button class="btn" id="pomoStartBtn" onclick="togglePomoTimer()">Start Pomodoro</button>
+                            <button class="btn btn-outline" onclick="resetPomoTimer()">Reset</button>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">Parallel Stopwatch</div>
+                        <div class="timer-big" id="swClock">00:00:00</div>
+                        <div style="display: flex; gap: 10px; justify-content: center; margin-top: auto;">
+                            <button class="btn" id="swStartBtn" onclick="toggleSwTimer()">Start Stopwatch</button>
+                            <button class="btn btn-outline" onclick="resetSwTimer()">Reset</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <span>Synthesized Focus Soundscapes</span>
+                        <span id="audioLabel" style="font-family: monospace;">MUTED</span>
+                    </div>
+                    <div class="sound-grid">
+                        <div class="sound-card" id="snd-brown" onclick="toggleAudio('brown')">
+                            <div class="sound-title">Brown Noise</div>
+                            <div class="sound-desc">Deep low-pass rumble</div>
+                        </div>
+                        <div class="sound-card" id="snd-rain" onclick="toggleAudio('rain')">
+                            <div class="sound-title">Soothing Rain</div>
+                            <div class="sound-desc">Filtered ambient drops</div>
+                        </div>
+                        <div class="sound-card" id="snd-cafe" onclick="toggleAudio('cafe')">
+                            <div class="sound-title">Cafe Ambience</div>
+                            <div class="sound-desc">Soft low-pass background hum</div>
+                        </div>
+                        <div class="sound-card" id="snd-exam" onclick="toggleAudio('exam')">
+                            <div class="sound-title">Exam Hall Focus</div>
+                            <div class="sound-desc">High-frequency silent focus</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">Frictionless Scratchpad</div>
+                    <textarea id="dumpText" placeholder="Type raw memory dump, scratch notes, or equations..." style="height: 130px; font-family: monospace;"></textarea>
+                    <button class="btn btn-outline" onclick="saveDumpLog()" style="align-self: flex-start;">Save Dump Log</button>
+                </div>
+            </div>
+
+            <!-- TAB 5: SETTINGS & CUSTOMIZATION ENGINE -->
+            <div id="tab-settings" class="tab-content hidden">
+                <div class="card">
+                    <div class="card-header">Workspace Configuration & Identity</div>
+                    <div style="display: flex; flex-direction: column; gap: 12px;">
+                        <label style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Display Handle & Professional Email</label>
+                        <input type="text" id="updateHandleInp" placeholder="Update handle...">
+                        <input type="email" id="updateEmailInp" placeholder="Update verified professional email...">
+                        <button class="btn" onclick="updateHandleName()" style="align-self: flex-start;">Update Credentials</button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">Personalization & Theme Customization</div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                        <div style="display: flex; flex-direction: column; gap: 6px;">
+                            <label style="font-size: 11px; color: var(--text-muted); font-family: monospace;">Background Color</label>
+                            <input type="color" id="pickerBg" value="#090a0f" onchange="applyCustomTheme()" style="width: 100%; height: 40px; cursor: pointer;">
+                        </div>
+                        <div style="display: flex; flex-direction: column; gap: 6px;">
+                            <label style="font-size: 11px; color: var(--text-muted); font-family: monospace;">Accent Text / Border Color</label>
+                            <input type="color" id="pickerAccent" value="#ffffff" onchange="applyCustomTheme()" style="width: 100%; height: 40px; cursor: pointer;">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">Session Operations</div>
+                    <button class="btn btn-outline" onclick="clearSessionData()" style="align-self: flex-start;">Sign Out & Clear Workspace Session</button>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- DAY PLANNER & INSPECTOR MODAL -->
+    <div id="inspectorModal" class="modal-overlay hidden">
+        <div class="modal-card">
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); padding-bottom:10px;">
+                <span id="modalDateTitle" style="font-size:13px; font-weight:800; font-family:monospace;">Date Planner</span>
+                <button onclick="closeModal()" style="background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:16px;">✕</button>
+            </div>
+            <div id="modalContent" style="display: flex; flex-direction: column; gap: 14px; font-size: 13px; color: var(--text-main);"></div>
+        </div>
+    </div>
+
+    <script>
+        let userName = localStorage.getItem('disp_handle') || '';
+        let userEmail = localStorage.getItem('disp_email') || '';
+        let trialStart = localStorage.getItem('disp_trial_start');
+        let customGoals = JSON.parse(localStorage.getItem('disp_goals')) || ['Launch V1.0 Open Beta Workspace'];
+        let targetList = JSON.parse(localStorage.getItem('disp_targets')) || [];
+        let historyLogs = JSON.parse(localStorage.getItem('disp_history')) || {};
+        let dayPlans = JSON.parse(localStorage.getItem('disp_plans')) || {};
+        let communityReviews = JSON.parse(localStorage.getItem('disp_reviews')) || [];
+
+        let pomoTime = 25 * 60, pomoInterval = null, isPomoRunning = false;
+        let swTime = 0, swInterval = null, isSwRunning = false;
+        let audioCtx = null, noiseSource = null, activeAudioType = null;
+        let calYear = 2026, calMonth = 9; // October 2026
+        let isSidebarVisible = true;
+        let activeSelectedDate = '';
+
+        window.onload = () => {
+            // Check 7-day trial expiry
+            if (trialStart) {
+                const daysElapsed = (Date.now() - parseInt(trialStart)) / (1000 * 60 * 60 * 24);
+                if (daysElapsed > 7) {
+                    document.getElementById('expiredModal').classList.remove('hidden');
+                }
+            }
+
+            if (userName) {
+                document.getElementById('landingView').classList.add('hidden');
+                document.getElementById('displayWelcome').innerText = `WELCOME, ${userName.toUpperCase()}`;
+                document.getElementById('updateHandleInp').value = userName;
+                document.getElementById('updateEmailInp').value = userEmail;
+            }
+            renderGoals();
+            renderTargets();
+            renderCalendarGrid();
+            renderReviews();
+            loadCustomTheme();
+            document.getElementById('dumpText').value = localStorage.getItem('disp_dump') || '';
+
+            window.addEventListener('keydown', (e) => {
+                if ((e.key === 's' || e.key === 'S') && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
+                    toggleSidebar();
+                }
+            });
+        };
+
+        function validateEmail(email) {
+            const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return re.test(email);
+        }
+
+        function initializeWorkspace() {
+            const inputName = document.getElementById('handleInput').value.trim();
+            const inputEmail = document.getElementById('emailInput').value.trim();
+            const errBox = document.getElementById('authErrorMsg');
+
+            if (!inputName) {
+                errBox.style.display = 'block';
+                errBox.innerText = 'Error: Please enter your name or handle.';
+                return;
+            }
+            if (!validateEmail(inputEmail)) {
+                errBox.style.display = 'block';
+                errBox.innerText = 'Error: Please enter a valid professional email address (e.g., name@domain.com).';
+                return;
+            }
+
+            errBox.style.display = 'none';
+            userName = inputName;
+            userEmail = inputEmail;
+            if (!trialStart) {
+                trialStart = Date.now().toString();
+                localStorage.setItem('disp_trial_start', trialStart);
+            }
+            localStorage.setItem('disp_handle', userName);
+            localStorage.setItem('disp_email', userEmail);
+            document.getElementById('displayWelcome').innerText = `WELCOME, ${userName.toUpperCase()}`;
+            document.getElementById('updateHandleInp').value = userName;
+            document.getElementById('updateEmailInp').value = userEmail;
+            document.getElementById('landingView').classList.add('hidden');
+        }
+
+        function toggleSidebar() {
+            isSidebarVisible = !isSidebarVisible;
+            const sidebar = document.getElementById('appSidebar');
+            sidebar.style.display = isSidebarVisible ? 'flex' : 'none';
+        }
+
+        function submitReview() {
+            const author = document.getElementById('reviewAuthorInp').value.trim();
+            const text = document.getElementById('reviewTextInp').value.trim();
+            if (!author || !text) return;
+
+            communityReviews.push({ author, text });
+            document.getElementById('reviewAuthorInp').value = '';
+            document.getElementById('reviewTextInp').value = '';
+            localStorage.setItem('disp_reviews', JSON.stringify(communityReviews));
+            renderReviews();
+        }
+
+        function renderReviews() {
+            const container = document.getElementById('reviewsList');
+            if (communityReviews.length === 0) {
+                container.innerHTML = `<div style="font-size:11px; color:var(--text-muted); font-family:monospace;">No user reviews submitted yet. Be the first!</div>`;
+                return;
+            }
+            container.innerHTML = communityReviews.map(r => `
+                <div class="review-card">
+                    <div class="review-text">"${r.text}"</div>
+                    <div class="review-author">— ${r.author}</div>
+                </div>
+            `).join('');
+        }
+
+        function showTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+            document.getElementById(`nav-${tabId}`).classList.add('active');
+        }
+
+        function addCustomGoal() {
+            const val = document.getElementById('goalInp').value.trim();
+            if (!val) return;
+            customGoals.push(val);
+            document.getElementById('goalInp').value = '';
+            localStorage.setItem('disp_goals', JSON.stringify(customGoals));
+            renderGoals();
+        }
+
+        function removeGoal(idx) {
+            customGoals.splice(idx, 1);
+            localStorage.setItem('disp_goals', JSON.stringify(customGoals));
+            renderGoals();
+        }
+
+        function renderGoals() {
+            const container = document.getElementById('goalsList');
+            container.innerHTML = customGoals.map((g, i) => `
+                <div class="core-goal-item">
+                    <span>⚡ ${g}</span>
+                    <span class="delete-btn" onclick="removeGoal(${i})">✕</span>
+                </div>
+            `).join('');
+        }
+
+        function addOperationalTarget() {
+            const text = document.getElementById('targetInp').value.trim();
+            const cat = document.getElementById('targetCat').value;
+            if (!text) return;
+
+            targetList.push({ id: Date.now(), text, cat, done: false });
+            document.getElementById('targetInp').value = '';
+            saveTargets();
+        }
+
+        function toggleTargetDone(id) {
+            const item = targetList.find(t => t.id === id);
+            if (item) { item.done = !item.done; saveTargets(); }
+        }
+
+        function deleteTarget(id) {
+            targetList = targetList.filter(t => t.id !== id);
+            saveTargets();
+        }
+
+        function saveTargets() {
+            localStorage.setItem('disp_targets', JSON.stringify(targetList));
+            renderTargets();
+        }
+
+        function renderTargets() {
+            const container = document.getElementById('targetListDisplay');
+            container.innerHTML = targetList.map(t => `
+                <div class="list-item">
+                    <label style="display: flex; align-items: center; gap: 12px; ${t.done ? 'text-decoration: line-through; opacity: 0.4;' : ''}">
+                        <input type="checkbox" ${t.done ? 'checked' : ''} onchange="toggleTargetDone(${t.id})" style="width: 16px; height: 16px; cursor: pointer;">
+                        <span style="font-weight: 600;">${t.text}</span>
+                    </label>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span class="cat-badge">${t.cat}</span>
+                        <span class="delete-btn" onclick="deleteTarget(${t.id})">✕</span>
+                    </div>
+                </div>
+            `).join('');
+
+            document.getElementById('pendingNum').innerText = targetList.filter(t => !t.done).length;
+            document.getElementById('completedNum').innerText = targetList.filter(t => t.done).length;
+        }
+
+        function togglePomoTimer() {
+            if (isPomoRunning) {
+                clearInterval(pomoInterval); isPomoRunning = false;
+                document.getElementById('pomoStartBtn').innerText = 'Start Pomodoro';
+            } else {
+                isPomoRunning = true;
+                document.getElementById('pomoStartBtn').innerText = 'Pause Session';
+                pomoInterval = setInterval(() => {
+                    if (pomoTime > 0) { pomoTime--; updatePomoDisplay(); }
+                    else { clearInterval(pomoInterval); alert('Session completed!'); resetPomoTimer(); }
+                }, 1000);
+            }
+        }
+
+        function resetPomoTimer() {
+            clearInterval(pomoInterval); isPomoRunning = false;
+            const w = parseInt(document.getElementById('pomoWorkInp').value) || 25;
+            pomoTime = w * 60; updatePomoDisplay();
+            document.getElementById('pomoStartBtn').innerText = 'Start Pomodoro';
+        }
+
+        function updatePomoDisplay() {
+            const m = Math.floor(pomoTime / 60), s = pomoTime % 60;
+            document.getElementById('pomoClock').innerText = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+        }
+
+        function toggleSwTimer() {
+            if (isSwRunning) {
+                clearInterval(swInterval); isSwRunning = false;
+                document.getElementById('swStartBtn').innerText = 'Start Stopwatch';
+            } else {
+                isSwRunning = true;
+                document.getElementById('swStartBtn').innerText = 'Pause Stopwatch';
+                swInterval = setInterval(() => { swTime++; updateSwDisplay(); }, 1000);
+            }
+        }
+
+        function resetSwTimer() {
+            clearInterval(swInterval); isSwRunning = false; swTime = 0; updateSwDisplay();
+            document.getElementById('swStartBtn').innerText = 'Start Stopwatch';
+        }
+
+        function updateSwDisplay() {
+            const h = Math.floor(swTime / 3600), m = Math.floor((swTime % 3600) / 60), s = swTime % 60;
+            document.getElementById('swClock').innerText = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+        }
+
+        function toggleAudio(type) {
+            if (activeAudioType === type) { stopAudio(); return; }
+            stopAudio(); activeAudioType = type;
+            document.getElementById(`snd-${type}`).classList.add('active');
+            document.getElementById('audioLabel').innerText = type.toUpperCase();
+
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const bufferSize = audioCtx.sampleRate * 2;
+            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0);
+
+            if (type === 'brown') {
+                let lastOut = 0.0;
+                for (let i = 0; i < bufferSize; i++) {
+                    let white = Math.random() * 2 - 1;
+                    data[i] = (lastOut + (0.02 * white)) / 1.02;
+                    lastOut = data[i]; data[i] *= 3.5;
+                }
+            } else {
+                for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+            }
+
+            noiseSource = audioCtx.createBufferSource(); noiseSource.buffer = buffer; noiseSource.loop = true;
+
+            const filter = audioCtx.createBiquadFilter();
+            filter.type = type === 'brown' ? 'lowpass' : type === 'exam' ? 'highpass' : 'bandpass';
+            filter.frequency.value = type === 'brown' ? 250 : type === 'rain' ? 900 : type === 'cafe' ? 600 : 1200;
+
+            const gain = audioCtx.createGain(); gain.gain.value = 0.12;
+            noiseSource.connect(filter); filter.connect(gain); gain.connect(audioCtx.destination);
+            noiseSource.start();
+        }
+
+        function stopAudio() {
+            if (noiseSource) { noiseSource.stop(); audioCtx.close(); }
+            document.querySelectorAll('.sound-card').forEach(el => el.classList.remove('active'));
+            activeAudioType = null;
+            document.getElementById('audioLabel').innerText = 'MUTED';
+        }
+
+        function saveDumpLog() {
+            localStorage.setItem('disp_dump', document.getElementById('dumpText').value);
+            alert('Scratchpad log saved.');
+        }
+
+        function navCal(dir) {
+            calMonth += dir;
+            if (calMonth > 11) { calMonth = 0; calYear++; }
+            if (calMonth < 0) { calMonth = 11; calYear--; }
+            renderCalendarGrid();
+        }
+
+        function renderCalendarGrid() {
+            const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+            document.getElementById('calMonthYear').innerText = `${months[calMonth]} ${calYear}`;
+            const grid = document.getElementById('calDaysGrid');
+            grid.innerHTML = '';
+
+            const firstDay = new Date(calYear, calMonth, 1).getDay();
+            const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+            const todayStr = new Date().toISOString().split('T')[0];
+
+            for (let i = 0; i < firstDay; i++) grid.innerHTML += `<div></div>`;
+
+            for (let d = 1; d <= daysInMonth; d++) {
+                const dateStr = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+                const log = historyLogs[dateStr];
+                const plan = dayPlans[dateStr];
+                const isToday = dateStr === todayStr;
+
+                let borderStyle = isToday ? 'border-color: var(--accent-white); font-weight: 800;' : 'border-color: var(--border);';
+                let bgStyle = log ? 'background: rgba(255,255,255,0.06);' : 'background: var(--bg-main);';
+                
+                // FAINT CROSS-OFF STAMP SO DATE NUMBER REMAINS VISIBLE
+                let stampIcon = '';
+                if (log && log.done > 0) {
+                    stampIcon = `<div style="font-size: 24px; font-weight: 900; color: rgba(243,244,246,0.35); position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none;">✕</div>`;
+                }
+
+                let badgeDot = plan ? `<div style="position: absolute; top: 4px; right: 4px; width: 5px; height: 5px; background: var(--accent-white); border-radius: 50%;"></div>` : '';
+
+                grid.innerHTML += `
+                    <div onclick="inspectDate('${dateStr}')" style="${bgStyle} ${borderStyle} aspect-ratio: 1; border: 1px solid; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 12px; font-family: monospace; cursor: pointer; position: relative; overflow: hidden;">
+                        ${badgeDot}
+                        <span>${d}</span>
+                        ${stampIcon}
+                    </div>
+                `;
+            }
+        }
+
+        function inspectDate(dateStr) {
+            activeSelectedDate = dateStr;
+            document.getElementById('modalDateTitle').innerText = `Planner & Log: ${dateStr}`;
+            const log = historyLogs[dateStr];
+            const plan = dayPlans[dateStr] || '';
+            const content = document.getElementById('modalContent');
+
+            let targetsListStr = log && log.tasks ? log.tasks.map(t => `• ${t.text} (${t.cat}) [${t.done ? 'Done' : 'Pending'}]`).join('<br>') : 'No finished targets logged for this date.';
+
+            content.innerHTML = `
+                <div>
+                    <label style="font-size: 11px; font-weight: 800; text-transform: uppercase; color: var(--text-muted); letter-spacing: 1px;">Daily Planner Note / Event (e.g. Birthday, Exam, Launch)</label>
+                    <input type="text" id="dayPlanInput" value="${plan}" placeholder="Write schedule, event or goals for ${dateStr}..." style="width: 100%; margin-top: 6px;">
+                    <button class="btn btn-outline" onclick="saveDayPlan()" style="margin-top: 8px; padding: 8px 14px; font-size: 11px;">Save Plan Note</button>
+                </div>
+                <div style="border-top: 1px solid var(--border); padding-top: 12px; margin-top: 4px;">
+                    <b>Execution Log (${log ? `${log.done} /${log.total} Done` : 'No Finish Day Triggered'}):</b>
+                    <div style="margin-top:6px; font-size:11px; font-family:monospace; color:var(--text-muted); line-height: 1.4;">${targetsListStr}</div>
+                </div>
+                ${log && log.notes ? `<div style="margin-top:6px;"><b>Scratchpad Log:</b><pre style="background:var(--bg-main); border:1px solid var(--border); padding:8px; border-radius:6px; font-size:11px; font-family:monospace; margin-top:4px; white-space:pre-wrap;">${log.notes}</pre></div>` : ''}
+            `;
+            document.getElementById('inspectorModal').classList.remove('hidden');
+        }
+
+        function saveDayPlan() {
+            const planText = document.getElementById('dayPlanInput').value.trim();
+            if (activeSelectedDate) {
+                if (planText) {
+                    dayPlans[activeSelectedDate] = planText;
+                } else {
+                    delete dayPlans[activeSelectedDate];
+                }
+                localStorage.setItem('disp_plans', JSON.stringify(dayPlans));
+                renderCalendarGrid();
+                alert(`Plan saved for ${activeSelectedDate}!`);
+                closeModal();
+            }
+        }
+
+        function closeModal() { document.getElementById('inspectorModal').classList.add('hidden'); }
+
+        function updateHandleName() {
+            const valName = document.getElementById('updateHandleInp').value.trim();
+            const valEmail = document.getElementById('updateEmailInp').value.trim();
+            if (valName && validateEmail(valEmail)) {
+                userName = valName;
+                userEmail = valEmail;
+                localStorage.setItem('disp_handle', userName);
+                localStorage.setItem('disp_email', userEmail);
+                document.getElementById('displayWelcome').innerText = `WELCOME, ${userName.toUpperCase()}`;
+                alert('Credentials updated successfully.');
+            } else {
+                alert('Please enter a valid name and professional email.');
+            }
+        }
+
+        function applyCustomTheme() {
+            const bgCol = document.getElementById('pickerBg').value;
+            const accentCol = document.getElementById('pickerAccent').value;
+            document.documentElement.style.setProperty('--bg-main', bgCol);
+            document.documentElement.style.setProperty('--accent-white', accentCol);
+            localStorage.setItem('disp_theme_bg', bgCol);
+            localStorage.setItem('disp_theme_accent', accentCol);
+        }
+
+        function loadCustomTheme() {
+            const savedBg = localStorage.getItem('disp_theme_bg');
+            const savedAccent = localStorage.getItem('disp_theme_accent');
+            if (savedBg) {
+                document.documentElement.style.setProperty('--bg-main', savedBg);
+                document.getElementById('pickerBg').value = savedBg;
+            }
+            if (savedAccent) {
+                document.documentElement.style.setProperty('--accent-white', savedAccent);
+                document.getElementById('pickerAccent').value = savedAccent;
+            }
+        }
+
+        function clearSessionData() {
+            if (confirm('Sign out and reset session?')) {
+                localStorage.clear(); location.reload();
+            }
+        }
+
+        function completeDay() {
+            confetti({ particleCount: 90, spread: 70, origin: { y: 0.6 } });
+            const todayStr = new Date().toISOString().split('T')[0];
+            
+            historyLogs[todayStr] = {
+                done: targetList.filter(t => t.done).length,
+                total: targetList.length,
+                tasks: [...targetList],
+                notes: document.getElementById('dumpText').value
+            };
+            localStorage.setItem('disp_history', JSON.stringify(historyLogs));
+            
+            targetList = [];
+            saveTargets();
+            renderCalendarGrid();
+            alert('Day completed and archived successfully with faint cross-off stamp on calendar.');
+        }
+    </script>
+</body>
+</html>
